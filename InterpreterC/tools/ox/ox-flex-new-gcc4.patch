@@ -1,0 +1,591 @@
+diff -Nur oxDistG1.04.orig/source/agc1.l oxDistG1.04/source/agc1.l
+--- oxDistG1.04.orig/source/agc1.l	2008-04-20 14:01:53.000000000 +0200
++++ oxDistG1.04/source/agc1.l	2008-04-20 12:12:14.000000000 +0200
+@@ -1,4 +1,5 @@
+ %start YD YDSI ADECL MH MB LVA ADSL UU CC TRDECL 
++%option yylineno 
+  
+  
+ %{
+@@ -69,6 +70,7 @@
+ #include "outMgr.h"
+ #include "symTrans.h"
+ #include "ctc.h"
++#define YY_USER_ACTION ptext=yytext;
+ %}
+  
+  
+@@ -247,7 +249,7 @@
+ 
+ void beginCC() {BEGIN CC;}   
+ 
+-int yyScnState() {return (yybgin-yysvec-1);}
++int yyScnState() {return YY_START;}
+ 
+ yywrap() 
+   {
+diff -Nur oxDistG1.04.orig/source/agc2.l oxDistG1.04/source/agc2.l
+--- oxDistG1.04.orig/source/agc2.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/agc2.l	2008-04-20 13:43:37.000000000 +0200
+@@ -1,6 +1,7 @@
+ %start YR YR1 AA LAAA LAAA1 
+ %start DL CL TT MUI TRAV1 TRVACT TRVCOND
+-%start EOSFRET  
++%start EOSFRET SKIP
++%option yylineno
+ 
+ %{
+ /* $Header: agc2.l,v 5.10 94/04/16 20:23:56 bischoff Exp $ */ 
+@@ -77,6 +78,7 @@
+ int startCondTempT; 
+ int nLparensT;
+ enum {oCond,dCond,action} travState;
++#define YY_USER_ACTION ptext=yytext;
+ %}
+  
+  
+@@ -92,7 +94,12 @@
+ 
+ IDENT ([a-zA-Z][a-zA-Z0-9]*)
+ %%
+-<EOSFRET>x             {scanScanInit(); return(EOSF);}
++<SKIP>^{OPTWS}%%{OPTWS}\n {flushLAbuffer(LA1,outG); charOut('\n',outG);
++			    BEGIN YR;
++			   }
++<SKIP>.   |
++<SKIP>\n ;
++<EOSFRET><<EOF>>             {scanScanInit(); return(EOSF);}
+ <YR>[ \t\n\f]          {flushLAbuffer(LA1,outG); charOut(*yytext,outG);}  
+ <YR>\/\*               {flushLAbuffer(LA1,outG); eatCommentAndEcho(outG,1);}
+ <YR>\/\/.*\n           {flushLAbuffer(LA1,outG); lexemeOut(outG);}
+@@ -343,13 +348,14 @@
+ 
+ 
+ void scanInit2() 
+-  {whichScanner = 2; 
+-   yylineno = *plineno; 
++  {whichScanner = 2;
++   yylineno=0; 
+    plineno = &yylineno; 
+    ptext = (char *)yytext; 
+    pleng = &yyleng; 
+-   BEGIN YR; 
++   BEGIN SKIP; 
+    yyin = yoxInG; 
++   rewind(yyin);
+   } 
+ 
+ 
+@@ -357,7 +363,7 @@
+ void beginAA() {BEGIN AA;}   
+ void beginTT() {BEGIN TT;}   
+  
+-int yyScnState() {return (yybgin-yysvec-1);} 
++int yyScnState() {return YY_START;} 
+ 
+ yywrap() 
+   {
+@@ -368,7 +374,7 @@
+       } 
+    unput('x');
+    BEGIN EOSFRET; 
+-   return 0; 
++   return 1; 
+ 
+ err1: 
+    rmTempFiles();
+diff -Nur oxDistG1.04.orig/source/agc3.l oxDistG1.04/source/agc3.l
+--- oxDistG1.04.orig/source/agc3.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/agc3.l	2008-04-20 12:12:14.000000000 +0200
+@@ -1,4 +1,5 @@
+ %start EOSFRET LD LRP LRRE LRRE1 LRA LRAAD LRAAR LRAAR1 LRAAD1 LUS MUI 
++%option yylineno 
+  
+ %{
+ /* $Header: agc3.l,v 5.10 94/04/16 20:23:59 bischoff Exp $ */ 
+@@ -78,6 +79,7 @@
+ static int nLparMac; 
+ static FILE *tempForTrash;
+ int yyStartCondTemp; 
++#define YY_USER_ACTION ptext=yytext;
+ %}
+  
+  
+@@ -92,7 +94,7 @@
+  
+ IDENT ([a-zA-Z][a-zA-Z0-9]*)
+ %%
+-<EOSFRET>x             {scanScanInit(); return EOSF;}
++<EOSFRET><<EOF>>             {scanScanInit(); return EOSF;}
+ <LD>^\%\%(.*)          {BEGIN LRP; 
+                         if (!buildHeaderFile) 
+                            {fprintf(Lfile[currentLfile].outPtr,"\n%%{\n"); 
+@@ -338,7 +340,7 @@
+   } 
+ 
+ 
+-int yyScnState() {return (yybgin-yysvec-1);} 
++int yyScnState() {return YY_START;} 
+ 
+ 
+ 
+@@ -356,9 +358,8 @@
+       }  
+    if (yyScnState() == LRAAR) 
+       yerror("error: identifier expected after \"return\".\n");   
+-   unput('x');
+    BEGIN EOSFRET;
+-   return 0;
++   return 1;
+ 
+ err1:
+    rmTempFiles();
+diff -Nur oxDistG1.04.orig/source/agc4.l oxDistG1.04/source/agc4.l
+--- oxDistG1.04.orig/source/agc4.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/agc4.l	2008-04-20 12:12:14.000000000 +0200
+@@ -1,5 +1,6 @@
+ %start GEN ADECL AADECL ADS MAC TRDECL
+ %start LD LRP LRRE LRRE1 LRA LRAAD LUS  
++%option yylineno 
+  
+ %{
+ /* $Header: agc4.l,v 5.10 94/04/16 20:24:02 bischoff Exp $ */
+@@ -68,6 +69,7 @@
+ #include "opts.hh"
+ #include "opts.h"
+ #include "outMgr.h"
++#define YY_USER_ACTION ptext=yytext;
+ %}
+ 
+ WS		[ \t\f]+
+@@ -164,7 +166,7 @@
+    inFileStr = yoxInFileStrG; 
+   } 
+ 
+-int yyScnState() {return (yybgin-yysvec-1);}
++int yyScnState() {return YY_START;}
+ 
+ int yywrap()
+   {
+diff -Nur oxDistG1.04.orig/source/agc5.l oxDistG1.04/source/agc5.l
+--- oxDistG1.04.orig/source/agc5.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/agc5.l	2008-04-20 12:12:14.000000000 +0200
+@@ -1,4 +1,5 @@
+ %start EOSFRET LRA LRAAD LRAAR LRAAR1 LRAAD1 LUS MUI 
++%option yylineno 
+  
+ %{
+ /* $Header: agc5.l,v 5.10 94/04/16 20:24:04 bischoff Exp $ */ 
+@@ -78,6 +79,7 @@
+ static int nLparMac; 
+ static FILE *tempForTrash;
+ int yyStartCondTemp; 
++#define YY_USER_ACTION ptext=yytext;
+ %}
+  
+  
+@@ -92,7 +94,7 @@
+  
+ IDENT ([a-zA-Z][a-zA-Z0-9]*)
+ %%
+-<EOSFRET>x             {scanScanInit(); return(EOSF);}
++<EOSFRET><<EOF>>             {scanScanInit(); return(EOSF);}
+ <LRA>\/\*              eatCommentAndEcho(outL,1); 
+ <LRA>\/\/.*\n          lexemeOut(outL);
+ <LRA>\"                eatStringAndEcho(outL); 
+@@ -281,7 +283,7 @@
+   } 
+ 
+ 
+-int yyScnState() {return (yybgin-yysvec-1);} 
++int yyScnState() {return YY_START;} 
+ 
+ 
+ 
+@@ -291,7 +293,7 @@
+       yerror("error: identifier expected after \"return\".\n");   
+    unput('x');
+    BEGIN EOSFRET;
+-   return 0;
++   return 1;
+ 
+ err1:
+    rmTempFiles();
+diff -Nur oxDistG1.04.orig/source/mac.c oxDistG1.04/source/mac.c
+--- oxDistG1.04.orig/source/mac.c	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/mac.c	2008-04-20 13:09:31.000000000 +0200
+@@ -76,6 +76,7 @@
+  * LLA        lexer lookahead 
+  */ 
+ 
++#include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+ 
+@@ -440,7 +441,8 @@
+   {char c;
+ 
+    c = *(macStackTop->nextChar)++; 
+-   if (!makeReadyInputFromMacro()) switchInputStreamFromMacro();  
++   if (!makeReadyInputFromMacro()) switchInputStreamFromMacro(); 
++   if(c=='\n')c='\t'; 
+    return c;
+   }
+ 
+diff -Nur oxDistG1.04.orig/source/Makefile oxDistG1.04/source/Makefile
+--- oxDistG1.04.orig/source/Makefile	2008-04-20 14:01:53.000000000 +0200
++++ oxDistG1.04/source/Makefile	2008-04-20 14:01:27.000000000 +0200
+@@ -4,8 +4,10 @@
+ #
+ # You may modify this file for the purpose of adapting Ox to your hardware
+ # or software environment.
+- 
+-CC=cc
++
++#CC=gcc34
++CC=gcc
++LEX=flex -l
+ 
+ SHELL= /bin/sh
+ 
+@@ -17,25 +19,25 @@
+ 	mac.o trav.o treeShow.o xtreeshw.o
+ 
+ medyy : medyy.l 
+-	lex medyy.l; $(CC) -o medyy lex.yy.c -ll 
++	$(LEX) medyy.l; $(CC) -o medyy lex.yy.c -lfl 
+ 
+ medi : medi.l 
+-	lex medi.l; $(CC) -o medi lex.yy.c -ll  
++	$(LEX) medi.l; $(CC) -o medi lex.yy.c -lfl  
+ 
+ lexyy1.c : agc1.l medyy 
+-	lex agc1.l; ./medyy lex.yy.c lexyy1.c 1 
++	$(LEX) agc1.l; ./medyy lex.yy.c lexyy1.c 1 
+ 
+ lexyy2.c : agc2.l medyy medi  
+-	lex agc2.l; ./medi lex.yy.c lex.yyM2.c ; ./medyy lex.yyM2.c lexyy2.c 2
++	$(LEX) agc2.l; ./medi lex.yy.c lex.yyM2.c ; ./medyy lex.yyM2.c lexyy2.c 2
+ 
+ lexyy3.c : agc3.l medyy medi  
+-	lex agc3.l; ./medi lex.yy.c lex.yyM3.c ; ./medyy lex.yyM3.c lexyy3.c 3
++	$(LEX) agc3.l; ./medi lex.yy.c lex.yyM3.c ; ./medyy lex.yyM3.c lexyy3.c 3
+ 
+ lexyy4.c : agc4.l medyy medi  
+-	lex agc4.l; ./medyy lex.yy.c lexyy4.c 4  
++	$(LEX) agc4.l; ./medyy lex.yy.c lexyy4.c 4  
+ 
+ lexyy5.c : agc5.l medyy medi  
+-	lex agc5.l; ./medi lex.yy.c lex.yyM5.c ; ./medyy lex.yyM5.c lexyy5.c 5
++	$(LEX) agc5.l; ./medi lex.yy.c lex.yyM5.c ; ./medyy lex.yyM5.c lexyy5.c 5
+ 
+ lexyy1.o : lexyy1.c glob.h scan.h opts.h outMgr.h symTrans.h ctc.h
+ 	$(CC) -c lexyy1.c   
+diff -Nur oxDistG1.04.orig/source/mDepsh.bak oxDistG1.04/source/mDepsh.bak
+--- oxDistG1.04.orig/source/mDepsh.bak	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/mDepsh.bak	1970-01-01 01:00:00.000000000 +0100
+@@ -1,152 +0,0 @@
+-/* $Header: mDeps.h,v 5.10 94/04/16 20:24:24 bischoff Exp $ */ 
+-
+-/*
+- *              copyright (c) 1992, 1993  Kurt M. Bischoff
+- *
+- * This file confines the hardware and software dependencies of Ox's 
+- * source code.  Adapting Ox to your environment may require that this 
+- * file be modified.  Users of 64-bit architectures such as DEC Alpha 
+- * should read the comment near the definition of ALIGNsIZE.  Others
+- * are unlikely to run into any trouble by ignoring this file and  
+- * going ahead with `make'ing ox. 
+- *
+- */
+-
+-
+-/*  "target machine" as used in this comment means the machine on which the 
+- *   generated evaluator is to run. 
+- *
+- *
+- *  ALIGNsIZE should be assigned the smallest integer such that: 
+- *
+- *      if (n is an address on the target machine and 
+- *          (n % ALIGNsIZE == 0)
+- *         ) 
+- *      then any C structure declared in a program that runs on the 
+- *           target machine will satisfy the machines's alignment 
+- *           requirements if it resides at n.     
+- *  
+- *  Users of 64-bit (in particular, DEC Alpha) machines probably need to 
+- *  define ALIGNsIZE to be 8.  Just about everybody else can leave it 
+- *  as 4 (the distribution default). 
+- */ 
+-#define ALIGNsIZE 4
+-
+-
+-
+-/* true if the character set of the compiler development machine is the 
+- * same as the character set of the machine on which the developed 
+- * compiler will run.  This is not currently a supported feature. 
+- * so cscdmEQcscm should be left as 0.
+- */
+-#define cscdmEQcscm 0 
+-
+-
+-
+-/* The following constants control the sizes of data structures
+- * in the generated evaluator.  Each is listed with its size in the
+- * Ox distribution package.  The distribution default sizes assume 
+- * that there is not a lot of memory available 
+- * on the machine(s) on which the generated evaluators are to run.  They 
+- * can be changed at evaluator-generation time by using Ox's -Y command 
+- * line options, or now (at Ox-generation time) by editing this file. 
+- * It is unlikely that the sizes other than the first three listed need 
+- * to be changed at Ox-generation time.  Anyway, the generated evaluator 
+- * fails gracefully and lets the user know in case it runs out of 
+- * memory.  The Ox user also has the option of extending to the user 
+- * of the generated evaluator the same memory-extension options (see
+- * the reference manual).
+-
+- * Changing these constants is likely to cause some false alarms from 
+- * the Ox test procedures.  If you aren't sure whether your installation 
+- * is safe, send your question to: ox-project@cs.iastate.edu.   
+-
+-
+- * * MAXnBYTESnODEsTG  400000L 
+- * The number of bytes allocated for parse-tree node and attribute-
+- * instance storage.
+-
+- * * MAXnREFcOUNTS     100000L 
+- * The number of dependee counts (one byte each) allocated.  This is the
+- * maximum number of attribute instances in the parse tree.
+- * 
+- * * MAXnCHILDREN       12000L 
+- * The number of pointers allocated for child lists.  This is the maximum
+- * number of non-root parse-tree nodes.  Each one consumes sizeof(void *)
+- * bytes.
+-
+-
+-
+- * * MAXsTACKsIZE        1000L 
+- * The maximum number of subtrees on the parse-tree stack.  This should
+- * be increased if the attribute grammars are expected to use much right 
+- * recursion and the generated evaluators are expected to process large 
+- * inputs.
+-
+- * * ssalSPACEsIZE      10000L 
+- * The maximum number of solved synthesized attributes of the roots of 
+- * stacked subtrees.
+-
+- * * rsMAXsIZE            500L 
+- * The maximum size of the ready set.   
+-
+- * * TRAVsTACKmAXsIZE    1000L
+- * The maximum size of the postdecoration-traversal stack.  The size of
+- * stack needed for a depth-first traversal of the parse tree. 
+- */
+-
+-
+-
+-/* Below are three models for memory allocation in the generated 
+- * evaluators.  Choose one or design one of your own.
+- */
+-
+-
+-/* small model 
+- *    define MAXnBYTESnODEsTG  400000L 
+- *    define MAXnREFcOUNTS     100000L 
+- *    define MAXnCHILDREN       12000L 
+- *    define MAXsTACKsIZE        1000L 
+- *    define ssalSPACEsIZE      10000L 
+- *    define rsMAXsIZE            500L 
+- *    define TRAVsTACKmAXsIZE    1000L
+-*/
+-
+-
+-
+-/* medium model 
+- *    define MAXnBYTESnODEsTG  2000000L 
+- *    define MAXnREFcOUNTS      500000L 
+- *    define MAXnCHILDREN        60000L 
+- *    define MAXsTACKsIZE        2000L 
+- *    define ssalSPACEsIZE      20000L 
+- *    define rsMAXsIZE           1000L 
+- *    define TRAVsTACKmAXsIZE    2000L
+- */
+-
+-
+-
+-/* large model 
+- *    define MAXnBYTESnODEsTG  4000000L 
+- *    define MAXnREFcOUNTS     1000000L 
+- *    define MAXnCHILDREN       120000L 
+- *    define MAXsTACKsIZE        2000L 
+- *    define ssalSPACEsIZE      20000L 
+- *    define rsMAXsIZE           1000L 
+- *    define TRAVsTACKmAXsIZE    2000L
+- */
+-
+-
+-
+-/* medium model */
+-#define MAXnBYTESnODEsTG  2000000L 
+-#define MAXnREFcOUNTS      500000L 
+-#define MAXnCHILDREN        60000L 
+-#define MAXsTACKsIZE        2000L 
+-#define ssalSPACEsIZE      20000L 
+-#define rsMAXsIZE           1000L 
+-#define TRAVsTACKmAXsIZE    2000L
+-
+-
+-
+-
+diff -Nur oxDistG1.04.orig/source/medi.l oxDistG1.04/source/medi.l
+--- oxDistG1.04.orig/source/medi.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/medi.l	2008-04-20 12:12:14.000000000 +0200
+@@ -121,10 +121,10 @@
+ char *substIText[] = { 
+ "extern int inFromMac;\n", 
+ "extern char inputFromMacro();\n", 
+-"#define input() (inFromMac?((yysptr>yysbuf)?(*--yysptr):\\\n",
++"#define myinput() (inFromMac?((yysptr>yysbuf)?(*--yysptr):\\\n",
+ "                                              inputFromMacro()\\\n",
+ "                           ):\\\n",
+-"                           inputM()\\\n", 
++"                           getc(yyin)\\\n", 
+ "                )\n",
+ }; 
+ 
+@@ -144,7 +144,7 @@
+ "#define unput(c) {if (inFromMac) \\\n",
+ "                     {yytchar= (c);*yysptr++=yytchar;} \\\n",
+ "                     else \\\n",
+-"                     unputM(c) \\\n",
++"                     unputM(c); \\\n",
+ "                 }\n",
+ }; 
+ 
+@@ -170,6 +170,13 @@
+ if ((outFile = fopen(argv[2],"w")) == (FILE *)NULL)
+    fprintf(stderr,"error when trying to open output file for med\n");
+ yyout = outFile;
++fprintf(outFile,"#include <stdio.h>\nchar yytchar,yysbuf[BUFSIZ]={0},*yysptr=&yysbuf[0];\n");
++fprintf(outFile,"#define YY_INPUT(buf,result,max_size) "
++"         { "
++"         int c = myinput(); "
++"         result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); "
++"         }\n");
++substInputDef(outFile);
+ yylex();
+ fclose(inFile);
+ fclose(outFile);
+diff -Nur oxDistG1.04.orig/source/medyy.l oxDistG1.04/source/medyy.l
+--- oxDistG1.04.orig/source/medyy.l	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/medyy.l	2008-04-20 12:12:14.000000000 +0200
+@@ -105,6 +105,7 @@
+ yyout = outFile;
+ modString = argv[3];
+ yylex();
++fprintf(outFile,"int yy%sinput(){return input();}\n",modString);
+ fclose(inFile);
+ fclose(outFile);
+ erasf(argv[1]);
+diff -Nur oxDistG1.04.orig/source/opts.c oxDistG1.04/source/opts.c
+--- oxDistG1.04.orig/source/opts.c	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/opts.c	2008-04-20 13:08:58.000000000 +0200
+@@ -59,6 +59,7 @@
+  ***********************************************************************
+  */
+ 
++#include <stdlib.h>
+ #include <stdio.h> 
+ #include <string.h>
+ 
+@@ -484,13 +485,13 @@
+ void closeIOfiles() 
+   {int i;  
+ 
+-   fclose(yoxInG);   
+-   fclose(yoxOutG);   
++    fclose(yoxInG); yoxInG=0;  
++   fclose(yoxOutG); yoxOutG=0;  
+    for (i=0;i<nLfiles;i++) 
+      {fclose(Lfile[i].inPtr); 
+-      fclose(Lfile[i].outPtr); 
++     fclose(Lfile[i].outPtr);Lfile[i].outPtr=0; 
+      } 
+-   fclose(yoxOutH);   
++   fclose(yoxOutH);yoxOutH=0;   
+   } 
+ 
+ 
+@@ -498,14 +499,14 @@
+ void rmOutputFiles() 
+   {int i; 
+ 
+-   fclose(yoxOutG); 
++    if (yoxOutG) fclose(yoxOutG); 
+    erasf(yoxOutFileStrG); 
+    for (i=0;i<nLfiles;i++) 
+-       {fclose(Lfile[i].outPtr); 
++       {if(Lfile[i].outPtr)fclose(Lfile[i].outPtr); 
+         erasf(Lfile[i].outName); 
+        }
+    if (buildHeaderFile) 
+-      {fclose(yoxOutH); 
++      {if(yoxOutH)fclose(yoxOutH); 
+        erasf(yoxOutFileStrH); 
+       }
+    fprintf(stderr,"ox did not generate output.\n"); 
+diff -Nur oxDistG1.04.orig/source/opts.h oxDistG1.04/source/opts.h
+--- oxDistG1.04.orig/source/opts.h	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/opts.h	2008-04-20 13:05:45.000000000 +0200
+@@ -59,6 +59,10 @@
+  ***********************************************************************
+  */
+ 
++#include "opts.hh"
++#include <stdlib.h>
++#include <string.h>
++
+ extern char *yoxInFileStrL; 
+ extern char *yoxInFileStrG; 
+ extern char *yoxOutFileStrH; 
+@@ -72,7 +76,8 @@
+ 
+ extern int nLfiles; 
+ extern int currentLfile; 
+-extern struct LfileRec Lfile[]; 
++
++extern struct LfileRec Lfile[];
+ 
+ extern int alignSize; 
+ extern int buildHeaderFile; 
+diff -Nur oxDistG1.04.orig/source/opts.hh oxDistG1.04/source/opts.hh
+--- oxDistG1.04.orig/source/opts.hh	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/opts.hh	2008-04-20 12:48:53.000000000 +0200
+@@ -59,6 +59,9 @@
+  ***********************************************************************
+  */
+ 
++#ifndef __OPTS_HH
++#define __OPTS_HH
++
+ #define LEXSCANNER 3
+ #define GENSCANNER 5
+ #define NOSCANNER  100
+@@ -90,3 +93,4 @@
+                  int scanner;
+                 };  
+ 
++#endif
+diff -Nur oxDistG1.04.orig/source/outMgr.c oxDistG1.04/source/outMgr.c
+--- oxDistG1.04.orig/source/outMgr.c	2008-04-20 14:01:54.000000000 +0200
++++ oxDistG1.04/source/outMgr.c	2008-04-20 12:47:59.000000000 +0200
+@@ -62,8 +62,7 @@
+ #include <stdio.h> 
+ 
+ #include "glob.h" 
+-#include "opts.hh" 
+-#include "opts.h" 
++#include "opts.h"
+ #include "symTrans.h"
+ #include "mac.h"
+ #include "joinTabs.h"

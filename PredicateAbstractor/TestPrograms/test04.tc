@@ -1,0 +1,7 @@
+input a;
+
+while (b = a = a - 1) {
+  d = b + a + d;
+}
+assert(b == a);
+assert(!(0 < a));

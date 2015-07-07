@@ -1,0 +1,6 @@
+Required Tools:
+
+- gcc or clang
+- flex or lex
+- yacc or 'bison -y'
+- gawk

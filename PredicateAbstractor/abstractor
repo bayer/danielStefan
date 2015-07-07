@@ -1,0 +1,1 @@
+java -jar PredAbstr/JavaTinyC.jar $1 && ./PredAbstr/pred_abstr -i "$@" | dot -Tpng > $1.png && xv $1.png

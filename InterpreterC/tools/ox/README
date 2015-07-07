@@ -1,0 +1,8 @@
+Installation:
+
+- sh ox.sh
+- cd oxDistG1.04
+- patch -p1 < ../ox-flex-new-gcc4.patch
+- cd source
+- make ox
+- cp ox /usr/local/bin/

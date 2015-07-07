@@ -1,0 +1,7 @@
+input d, e, f;
+
+while (a = b = c = (d + e + (!(f < 5)))) {
+  b = c;
+  f = f - 1;
+  assert(a == 5);
+}

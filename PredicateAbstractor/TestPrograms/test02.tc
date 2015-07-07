@@ -1,0 +1,18 @@
+input a,b;
+output d;
+
+c = a + b;
+d = e = 0;
+while (0 < c) {
+  d = d + a + b;
+  if (e == 0) {
+    e = 1;
+    a = a - 1;
+  }
+  if (e == 1) {
+    e = 0;
+    b = b - 1;
+  }
+  c = c - 1;
+}
+assert(c == 0);

@@ -1,0 +1,8 @@
+Installation:
+
+- unpack archive
+- cd <into the folder>
+- ./configure --enable-cxx   #important, because MathSAT5 needs C++ support
+- make
+- make test
+- make install

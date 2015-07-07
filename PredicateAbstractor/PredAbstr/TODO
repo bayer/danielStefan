@@ -1,0 +1,7 @@
+* Abstraction Heuristic
+
+Nice to have:
+* Only necessary predicates in each abstract state
+
+Done:
+* Program Counter automatically in abstraction

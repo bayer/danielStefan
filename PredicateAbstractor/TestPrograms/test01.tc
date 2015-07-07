@@ -1,0 +1,9 @@
+input a,b,c,d;
+output b;
+
+e = 5;
+while (a < 10) {
+  b = b + a;
+  a = a - 1;
+}
+e = e + b;
