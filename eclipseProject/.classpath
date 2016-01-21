@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="/" kind="src" path="src"/>
+	<classpathentry excluding="/" kind="src" path="src">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/Users/bayer/Desktop/projects/UNI/CAVUE 181144_2015S/danielStefan/eclipseProject/lib"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="lib/guava-master/guava/src"/>
+	<classpathentry kind="src" path="lib/pengyifan-commons-master/src/main/java"/>
+	<classpathentry kind="src" path="LTLGrammar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/antlr-runtime-4.5.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/bayer/Desktop/projects/UNI/CAVUE%20181144_2015S/danielStefan/eclipseProject/lib/commons-lang3-3.4/commons-lang3-3.4-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.4/commons-lang3-3.4.jar"/>
+	<classpathentry kind="lib" path="lib/ltl2ba4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
