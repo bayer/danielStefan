@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import com.pengyifan.commons.collections.tree.TreeNode;
 
+import DataStructures.KripkeStructure;
 import parser.LKSBaseListener;
 import parser.LKSParser;
 
@@ -11,7 +12,7 @@ public class LKSGenerator extends LKSBaseListener {
 	public Integer size;
 	private int rowCounter = 0;
 	KripkeStructure lks;
-	KripkeStructure.KSNode activeNode;
+	KripkeStructure.LKSNode activeNode;
 	private Boolean enteredPredicateFlag = false;
 	
 	public LKSGenerator() {
@@ -29,7 +30,6 @@ public class LKSGenerator extends LKSBaseListener {
 	
 	@Override public void enterAdjacencyRow(LKSParser.AdjacencyRowContext ctx) { 
 		int i = 0;
-		
 		if (ctx.getChildCount() > lks.size() || rowCounter >= lks.size()) {
 			System.err.println("Error in LKS file, second section: too many nodes");
 			return;
@@ -38,7 +38,7 @@ public class LKSGenerator extends LKSBaseListener {
 		for (ParseTree l: ctx.children) {
 
 			if (l.getText().equals("1")){
-				lks.get(rowCounter).addChild(lks.get(i));
+				lks.getByPosition(rowCounter).addChild(lks.getByPosition(i));
 //				System.out.println(rowCounter + " to " + i);
 			}
 			i++;
@@ -56,12 +56,12 @@ public class LKSGenerator extends LKSBaseListener {
 			System.err.println("Error in LKS file, third section: node " + nodeNumber + " doesn't exist!");
 			return;
 		}
-		activeNode = lks.get(nodeNumber);
+		activeNode = lks.getByPosition(nodeNumber);
 	}
 	
 	@Override public void enterPredicate(LKSParser.PredicateContext ctx) { 
 		if (!enteredPredicateFlag) {
-			activeNode.addPredicate(ctx.getText());
+			activeNode.addPredicate(ctx);
 		}
 		enteredPredicateFlag = true;
 	}
@@ -79,11 +79,11 @@ public class LKSGenerator extends LKSBaseListener {
 			System.err.println("Error in LKS file, fourth section: " + fromNode +" -> " + toNode + " exceeds amount of nodes in LKS, which is: " + lks.size());
 			return;
 		}
-		if (lks.get(fromNode).getOriginalNode() != null) {
+		if (lks.getByPosition(fromNode).getOriginalNode() != null) {
 			System.err.println("Error in LKS file, fourth section: '" + fromNode +" ->' already declared! ");
 			return;
 		}
-		lks.get(fromNode).addOriginalNode(toNode);
+		lks.getByPosition(fromNode).addOriginalNode(toNode);
 	}
 
 

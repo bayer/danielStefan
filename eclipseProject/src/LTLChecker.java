@@ -19,33 +19,22 @@ public class LTLChecker {
 			// TODO Auto-generated catch block
 		//	e1.printStackTrace();
 		//}
-		s = "A(a UFGx)";
-        //s = "XFGx";
-		s = "Aa & !b";
-		s = "A!(a | d)";
-		s = "A((a | !d) U (Fb -> !(c & b)))";
-		s = "A !a";
-		s = "A((a|!b) U !c)";
-		
+        //non-negated formula is given here
+//		s = "A(a UFGx)";
+//      s = "XFGx";
+//		s = "Aa & !b";
+//		s = "A!(a | d)";
+//		s = "A((a | !d) U (Fb -> !(c & b)))";
+//		s = "A((a|!b) U !c)";
+		s = "A i<101"; //true für test_02.c
+		s = "A (true R (i > 0))";
+//		s = "A a";
+		//TODO: implement next time (X) operator
 		try {
 			ParseExecuter pe = new ParseExecuter(s);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
-//		IFormulaFactory factory = new FormulaFactory();
-//		IFormula formula = 
-//				factory.Until(
-//						factory.Or(
-//						factory.Proposition("a"), factory.Not(factory.Proposition("b"))), 
-//						factory.Not(factory.Proposition("c")))
-//                
-//              ;
-//		
-//		for(ITransition t: rwth.i2.ltl2ba4j.LTL2BA4J.formulaToBA(formula)) {
-		for(ITransition t: rwth.i2.ltl2ba4j.LTL2BA4J.formulaToBA("[]((a||!b) U !c)")) {
-		    System.out.println(t);
 		}
 		
 	}

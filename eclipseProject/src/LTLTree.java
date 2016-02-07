@@ -10,27 +10,30 @@ import com.pengyifan.commons.collections.tree.*;
 
 import parser.LTLBaseListener;
 import parser.LTLParser;
+import DataStructures.NodeObject;
 /***
  * builds negated tree !φ of LTL formula φ, with negations only directly in front of atomic propositions
  * @author bayer
  */
 public class LTLTree extends LTLBaseListener {
-	
-	public  TreeNode root;
-	private TreeNode currentNode, node1, node2;
+	private class LTLTreeNode extends TreeNode {
+		
+	}
+	public  LTLTreeNode root;
+	private LTLTreeNode currentNode, node1, node2;
 	private LinkedList<TreeNode> deque = new LinkedList<TreeNode>();
 	private boolean negFlag = true;
 	
 	public LTLTree() {
 		super();
-		root = new TreeNode();
+		root = new LTLTreeNode();
 		currentNode = root;
 		deque.add(root);
 	}
 
 	@Override public void enterUnary(LTLParser.UnaryContext ctx) {
 		String connective = new String();
-		currentNode = (TreeNode) deque.removeLast();
+		currentNode = (LTLTreeNode) deque.removeLast();
 		if (ctx.getChild(0).getText().equals("!")) {
 			negFlag = !negFlag;
 			deque.add(currentNode);
@@ -49,7 +52,7 @@ public class LTLTree extends LTLBaseListener {
 				}
 			}
 			currentNode.setObject(new NodeObject(connective,NodeObject.NodeType.UNARY_OP));
-			node1 = new TreeNode();
+			node1 = new LTLTreeNode();
 			currentNode.add(node1);
 			deque.add(node1);
 		}
@@ -64,10 +67,13 @@ public class LTLTree extends LTLBaseListener {
 	}
 	
 	@Override public void enterProposition(LTLParser.PropositionContext ctx) { 
-		currentNode = (TreeNode) deque.removeLast();
-		
+		currentNode = (LTLTreeNode) deque.removeLast();
 		String nodeName = ctx.getChild(0).getChild(0).getText();
-		NodeObject nodeObject = new NodeObject(nodeName,NodeObject.NodeType.PROPOSITION);
+		if (ctx.getChild(0).getChildCount() > 1) {
+			nodeName += 	ctx.getChild(0).getChild(1).getText() +
+							ctx.getChild(0).getChild(2).getText();
+		}
+		NodeObject nodeObject = new NodeObject(nodeName, negFlag, ctx.getChild(0));
 		
 		if (negFlag) {
 			nodeObject.negative = true;
@@ -80,7 +86,7 @@ public class LTLTree extends LTLBaseListener {
 		
 		String connective;
 		
-		currentNode = (TreeNode) deque.removeLast();
+		currentNode = (LTLTreeNode) deque.removeLast();
 		
 		connective = ctx.getChild(1).getText();
 		if (negFlag) {
@@ -104,8 +110,8 @@ public class LTLTree extends LTLBaseListener {
 		
 		currentNode.setObject(new NodeObject(connective,NodeObject.NodeType.BINARY_OP));
 
-		node1 = new TreeNode();
-		node2 = new TreeNode();
+		node1 = new LTLTreeNode();
+		node2 = new LTLTreeNode();
 		currentNode.add(node1);
 		currentNode.add(node2);
 		deque.add(node2);		

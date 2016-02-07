@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import com.pengyifan.commons.collections.tree.TreeNode;
 
 import DataStructures.KripkeStructure.LKSNode;
@@ -154,11 +156,6 @@ public class BüchiAutomaton {
 		
 	}
 	
-//	public BüchiNode addNewInitNode() {
-//		BüchiNode node = addNewNode();
-//		initialNodes.add(node);
-//		return node;
-//	}
 	
 	public BüchiNode addNewNode() {
 		BüchiNode node = new BüchiNode();
@@ -187,7 +184,57 @@ public class BüchiAutomaton {
 	    }		
 	    return sets;
 	}
+	/*
+	 * synchronous product of büchi automata
+	 */
+	public BüchiAutomaton product(BüchiAutomaton other) {
+		BüchiAutomaton product = new BüchiAutomaton();
+		HashMap<BüchiNode,BüchiNode> mapEntry;
+		Integer i=0,j=0;
+		BüchiNode newNode = null,newChild = null;
+		Table<BüchiNode, BüchiNode, BüchiNode> nodeMap = HashBasedTable.create();
 
+		System.out.println(this.automataNodes.size() + "x" + other.automataNodes.size());
+		for (BüchiNode node1 : automataNodes) {
+			for (BüchiNode node2 : other.automataNodes) {
+				newNode = product.addNewNode();
+				if (initialNode.equals(node1) && other.initialNode.equals(node2)){
+					System.out.println("yes we have an init state"); //in der KS des programms gibt es keine init states
+					product.initialNode = newNode; //TODO: wie garantiere ich dass das wirlich nur einer ist?
+				}
+//				mapEntry = new HashMap<BüchiNode,BüchiNode>();
+//				mapEntry.put(node2, newNode);
+//				nodeMap.put(node1, mapEntry);
+				nodeMap.put(node1, node2, newNode);
+			}
+		}
+		System.out.println("="+product.automataNodes.size() + "//"+nodeMap.size());
+//		for (BüchiNode bn : nodeMap.keySet()) {
+//			System.out.println(nodeMap.get(bn).size());
+//		}
+		
+		HashSet<AtomicProp> props;
+		for (BüchiNode node1 : automataNodes) {
+			for (BüchiNode node2 : other.automataNodes) {
+				//for each child of node 1
+				for (BüchiNode child1 : node1.children.keySet()) {
+					//for each child of node 2
+					for (BüchiNode child2 : node2.children.keySet()) {
+						props = node1.children.get(child1);
+						//intersect atomic properties of both children
+						props.retainAll(node2.children.get(child2));
+						//set child relation and atomic properties for edge
+						if (props!=null) {
+							System.out.println("yes there are props!"+node1 + "x"+node2);
+							nodeMap.get(node1, node2).addChild(nodeMap.get(child1, child2), props);
+						}
+					}
+				}
+			}
+		}
+		return product;
+	}
+	
 	@Override
 	public String toString() {
 		String retVal;
